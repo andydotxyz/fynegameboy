@@ -1,14 +1,15 @@
 package gb
 
 import (
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/storage"
-	"github.com/andydotxyz/fynegameboy/driver"
-	"github.com/andydotxyz/fynegameboy/util"
 	"io/ioutil"
 	"log"
 	"os"
 	"time"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/storage"
+	"github.com/andydotxyz/fynegameboy/driver"
+	"github.com/andydotxyz/fynegameboy/util"
 )
 
 type Core struct {
@@ -419,13 +420,13 @@ func (core *Core) initRom(romData []byte, u fyne.URI) {
 	if u != nil {
 		fileURI := u.String()
 		if fileURI != "" {
-			core.RamURI = storage.NewURI(u.String()[:len(u.String())-3] + ".sav")
+			core.RamURI, _ = storage.ParseURI(u.String()[:len(u.String())-3] + ".sav")
 
-			read, err := storage.OpenFileFromURI(core.RamURI)
+			read, err := storage.Reader(core.RamURI)
 			if err != nil {
 				log.Println("Could not create reader for URI", core.RamURI)
 			} else {
-				data, err := ioutil.ReadAll(read) // could ne not there yet
+				data, err := ioutil.ReadAll(read) // could be not there yet
 				if err != nil {
 					log.Println("Could not read from URI", core.RamURI)
 				} else {

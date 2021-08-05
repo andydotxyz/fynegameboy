@@ -1,14 +1,15 @@
 package gb
 
 import (
-	"github.com/andydotxyz/fynegameboy/util"
-	"github.com/faiface/beep"
-	"github.com/faiface/beep/effects"
-	"github.com/faiface/beep/speaker"
 	"log"
 	"math"
 	"math/rand"
 	"time"
+
+	"github.com/andydotxyz/fynegameboy/util"
+	"github.com/faiface/beep"
+	"github.com/faiface/beep/effects"
+	"github.com/faiface/beep/speaker"
 )
 
 type Sound struct {
@@ -96,6 +97,7 @@ var sweepTime = [8]float64{
 }
 
 const secondPerTick = 1 / 44100.0
+
 var doneInit = false
 
 func (sound *Sound) Init() {

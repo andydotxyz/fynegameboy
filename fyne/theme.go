@@ -33,9 +33,8 @@ func newButtons(lcd *LCD) *buttons {
 	return &buttons{up: up, down: down, left: left, right: right, middle: mid, a: a, b: b, start: start, sel: sel}
 }
 
-
 func (b *buttons) Layout(_ []fyne.CanvasObject, s fyne.Size) {
-	scale := float32(math.Min(float64(s.Width / 130.0), float64(s.Height / 100.0)))
+	scale := float32(math.Min(float64(s.Width/130.0), float64(s.Height/100.0)))
 
 	abSize := fyne.NewSize(17.5*scale, 17.5*scale)
 	startSize := fyne.NewSize(21*scale, 5*scale)
@@ -54,9 +53,9 @@ func (b *buttons) Layout(_ []fyne.CanvasObject, s fyne.Size) {
 
 	dPadTop, dPadLeft := float32(26.25), float32(4.5)
 	if fyne.IsHorizontal(fyne.CurrentDevice().Orientation()) {
-		xPad := (s.Width/scale - 200)/4
+		xPad := (s.Width/scale - 200) / 4
 		xRightPad := s.Width/scale - xPad
-		dPadLeft = xPad+0.5
+		dPadLeft = xPad + 0.5
 
 		b.a.Move(fyne.NewPos((xRightPad-18)*scale, 19*scale))
 		b.b.Move(fyne.NewPos((xRightPad-35.25)*scale, 34.25*scale))
@@ -64,8 +63,8 @@ func (b *buttons) Layout(_ []fyne.CanvasObject, s fyne.Size) {
 		b.start.Move(fyne.NewPos((xRightPad-21.25)*scale, 70*scale))
 		b.sel.Move(fyne.NewPos((xRightPad-37.75)*scale, 80*scale))
 	} else {
-		xOff := (s.Width/scale - 130)/2
-		yOff := (s.Height/scale - 100)/2
+		xOff := (s.Width/scale - 130) / 2
+		yOff := (s.Height/scale - 100) / 2
 		b.a.Move(fyne.NewPos((xOff+106.25)*scale, (yOff+29)*scale))
 		b.b.Move(fyne.NewPos((xOff+82)*scale, (yOff+41.25)*scale))
 
@@ -158,9 +157,9 @@ func (c *curvedBox) Layout(_ []fyne.CanvasObject, s fyne.Size) {
 	h := s.Height
 	c.left.Resize(fyne.NewSize(h, h))
 	c.right.Resize(fyne.NewSize(h, h))
-	c.mid.Resize(fyne.NewSize(s.Width - h, h))
+	c.mid.Resize(fyne.NewSize(s.Width-h, h))
 
-	c.right.Move(fyne.NewPos(s.Width - h, 0))
+	c.right.Move(fyne.NewPos(s.Width-h, 0))
 	c.mid.Move(fyne.NewPos(h/2, 0))
 }
 

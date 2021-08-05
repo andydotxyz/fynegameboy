@@ -18,10 +18,10 @@ import (
 )
 
 type LCD struct {
-	Open func(fyne.URIReadCloser)
-	Pause func()
-	Reset func()
-	Resume func()
+	Open       func(fyne.URIReadCloser)
+	Pause      func()
+	Reset      func()
+	Resume     func()
 	DrawSignal chan bool
 
 	app    fyne.App
@@ -185,11 +185,11 @@ func (lcd *LCD) Layout(_ []fyne.CanvasObject, size fyne.Size) {
 	frameSize := frameSpaceSize
 	framePos := frameSpacePos
 	if frameSpaceRatio > frameRatio {
-		frameSize = fyne.NewSize(frameSpaceSize.Height * frameRatio, frameSpaceSize.Height)
-		framePos = frameSpacePos.Add(fyne.NewPos((frameSpaceSize.Width - frameSize.Width) / 2, 0))
+		frameSize = fyne.NewSize(frameSpaceSize.Height*frameRatio, frameSpaceSize.Height)
+		framePos = frameSpacePos.Add(fyne.NewPos((frameSpaceSize.Width-frameSize.Width)/2, 0))
 	} else if frameSpaceRatio < frameRatio {
-		frameSize = fyne.NewSize(frameSpaceSize.Width, frameSpaceSize.Width / frameRatio)
-		framePos = frameSpacePos.Add(fyne.NewPos(0, (frameSpaceSize.Height - frameSize.Height) / 2))
+		frameSize = fyne.NewSize(frameSpaceSize.Width, frameSpaceSize.Width/frameRatio)
+		framePos = frameSpacePos.Add(fyne.NewPos(0, (frameSpaceSize.Height-frameSize.Height)/2))
 	}
 
 	lcd.frame.Move(framePos)
@@ -255,7 +255,7 @@ func (lcd *LCD) Run(drawSignal chan bool, onQuit func()) {
 	})
 	win.SetMainMenu(fyne.NewMainMenu(fyne.NewMenu("File",
 		fyne.NewMenuItem("Open...", func() {
-			open := dialog.NewFileOpen(func (u fyne.URIReadCloser, err error) {
+			open := dialog.NewFileOpen(func(u fyne.URIReadCloser, err error) {
 				if u == nil {
 					return
 				}

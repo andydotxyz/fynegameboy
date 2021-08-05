@@ -1,8 +1,9 @@
 package gb
 
 import (
-	"github.com/andydotxyz/fynegameboy/util"
 	"log"
+
+	"github.com/andydotxyz/fynegameboy/util"
 )
 
 /*

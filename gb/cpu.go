@@ -2,8 +2,9 @@ package gb
 
 import (
 	"fmt"
-	"github.com/andydotxyz/fynegameboy/util"
 	"log"
+
+	"github.com/andydotxyz/fynegameboy/util"
 )
 
 type CPU struct {

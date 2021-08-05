@@ -1,8 +1,9 @@
 package driver
 
 import (
-	"github.com/andydotxyz/fynegameboy/util"
 	"time"
+
+	"github.com/andydotxyz/fynegameboy/util"
 )
 
 type ControllerDriver interface {

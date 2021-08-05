@@ -1,10 +1,11 @@
 package gb
 
 import (
-	"github.com/andydotxyz/fynegameboy/util"
 	"io/ioutil"
 	"log"
 	"time"
+
+	"github.com/andydotxyz/fynegameboy/util"
 )
 
 /*
