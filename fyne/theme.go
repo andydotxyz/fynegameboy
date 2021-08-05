@@ -75,11 +75,11 @@ func (b *buttons) Layout(_ []fyne.CanvasObject, s fyne.Size) {
 		dPadTop += yOff
 	}
 
-	b.up.Move(fyne.NewPos(float32(dPadLeft+12.5)*scale, float32(dPadTop)*scale))
-	b.down.Move(fyne.NewPos(float32(dPadLeft+12.5)*scale, float32(dPadTop+25)*scale))
-	b.left.Move(fyne.NewPos(float32(dPadLeft)*scale, float32(dPadTop+12.5)*scale))
-	b.right.Move(fyne.NewPos(float32(dPadLeft+25)*scale, float32(dPadTop+12.5)*scale))
-	b.middle.Move(fyne.NewPos(float32(dPadLeft+10.75)*scale, float32(dPadTop+10.75)*scale))
+	b.up.Move(fyne.NewPos((dPadLeft+12.5)*scale, (dPadTop)*scale))
+	b.down.Move(fyne.NewPos((dPadLeft+12.5)*scale, (dPadTop+25)*scale))
+	b.left.Move(fyne.NewPos((dPadLeft)*scale, (dPadTop+12.5)*scale))
+	b.right.Move(fyne.NewPos((dPadLeft+25)*scale, (dPadTop+12.5)*scale))
+	b.middle.Move(fyne.NewPos((dPadLeft+10.75)*scale, (dPadTop+10.75)*scale))
 }
 
 func (b *buttons) MinSize(objects []fyne.CanvasObject) fyne.Size {
