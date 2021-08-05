@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"io/ioutil"
-	"log"
 	"path/filepath"
 
 	fyneAPI "fyne.io/fyne/v2"
@@ -31,11 +30,10 @@ func init() {
 func loadRom(romPath string) ([]byte, fyneAPI.URI) {
 	data, err := ioutil.ReadFile(romPath)
 	if err != nil {
-		log.Println("ERROR", err)
-		return nil, storage.NewURI("")
+		return nil, nil
 	}
 
-	return data, storage.NewURI("file://" + romPath)
+	return data, storage.NewFileURI(romPath)
 }
 
 func newCore(d *fyne.LCD) *gb.Core {
@@ -56,14 +54,14 @@ func newCore(d *fyne.LCD) *gb.Core {
 func startGUI() {
 	d := fyne.NewDriver()
 
-	uri := storage.NewURI(fyneAPI.CurrentApp().Preferences().String("RomURI"))
+	uri, _ := storage.ParseURI(fyneAPI.CurrentApp().Preferences().String("RomURI"))
 
 	var data []byte
 	if romPath == "" && uri != nil && uri.String() != "" {
-		read, err := storage.OpenFileFromURI(uri)
-		log.Println("err", err)
-		data, err = ioutil.ReadAll(read)
-		log.Println("err", err, len(data))
+		read, err := storage.Reader(uri)
+		if err != nil {
+			data, _ = ioutil.ReadAll(read)
+		}
 	}
 
 	var core *gb.Core
@@ -96,6 +94,7 @@ func startGUI() {
 		}
 		_ = r.Close()
 		data = bytes
+		uri = r.URI()
 		d.Reset()
 	}
 

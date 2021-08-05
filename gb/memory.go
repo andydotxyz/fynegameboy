@@ -76,7 +76,9 @@ func (core *Core) initMemory() {
 func (core *Core) SaveRAM() {
 	if core.Memory.dirty {
 		core.Memory.dirty = false
-		core.Cartridge.MBC.SaveRam(core.RamURI)
+		if core.RamURI != nil {
+			core.Cartridge.MBC.SaveRam(core.RamURI)
+		}
 	}
 }
 
