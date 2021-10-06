@@ -5,15 +5,15 @@ import (
 	"log"
 	"runtime"
 
+	"fyne.io/fyne/v2/theme"
 	"github.com/goki/freetype"
 	"github.com/goki/freetype/truetype"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/internal/cache"
 	"fyne.io/fyne/v2/internal/painter"
 )
-
-var textures = make(map[fyne.CanvasObject]Texture, 1024)
 
 func logGLError(err uint32) {
 	if err == 0 {
@@ -27,14 +27,14 @@ func logGLError(err uint32) {
 	}
 }
 
-func getTexture(object fyne.CanvasObject, creator func(canvasObject fyne.CanvasObject) Texture) Texture {
-	texture, ok := textures[object]
+func (p *glPainter) getTexture(object fyne.CanvasObject, creator func(canvasObject fyne.CanvasObject) Texture) Texture {
+	texture, ok := cache.GetTexture(object)
 
 	if !ok {
-		texture = creator(object)
-		textures[object] = texture
+		texture = cache.TextureType(creator(object))
+		cache.SetTexture(object, texture, p.canvas)
 	}
-	return texture
+	return Texture(texture)
 }
 
 func (p *glPainter) newGlCircleTexture(obj fyne.CanvasObject) Texture {
@@ -64,6 +64,10 @@ func (p *glPainter) newGlStrokedRectTexture(obj fyne.CanvasObject) Texture {
 
 func (p *glPainter) newGlTextTexture(obj fyne.CanvasObject) Texture {
 	text := obj.(*canvas.Text)
+	color := text.Color
+	if color == nil {
+		color = theme.ForegroundColor()
+	}
 
 	bounds := text.MinSize()
 	width := int(p.textureScale(bounds.Width))
@@ -78,7 +82,7 @@ func (p *glPainter) newGlTextTexture(obj fyne.CanvasObject) Texture {
 
 	d := painter.FontDrawer{}
 	d.Dst = img
-	d.Src = &image.Uniform{C: text.Color}
+	d.Src = &image.Uniform{C: color}
 	d.Face = face
 	d.Dot = freetype.Pt(0, height-face.Metrics().Descent.Ceil())
 	d.DrawString(text.Text, text.TextStyle.TabWidth)

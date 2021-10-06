@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/internal"
 	"fyne.io/fyne/v2/internal/app"
+	"fyne.io/fyne/v2/internal/cache"
 	"fyne.io/fyne/v2/internal/painter"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -129,15 +130,19 @@ func (d *gLDriver) runGL() {
 
 				w.viewLock.RLock()
 				expand := w.shouldExpand
+				fullScreen := w.fullScreen
 				w.viewLock.RUnlock()
 
-				if expand {
+				if expand && !fullScreen {
 					w.fitContent()
 					w.viewLock.Lock()
+					shouldExpand := w.shouldExpand
 					w.shouldExpand = false
 					view := w.viewport
 					w.viewLock.Unlock()
-					view.SetSize(w.width, w.height)
+					if shouldExpand {
+						view.SetSize(w.shouldWidth, w.shouldHeight)
+					}
 				}
 
 				newWindows = append(newWindows, win)
@@ -198,7 +203,7 @@ func (d *gLDriver) startDrawThread() {
 				}
 			case set := <-settingsChange:
 				painter.ClearFontCache()
-				painter.SvgCacheReset()
+				cache.ResetThemeCaches()
 				app.ApplySettingsWithCallback(set, fyne.CurrentApp(), func(w fyne.Window) {
 					c, ok := w.Canvas().(*glCanvas)
 					if !ok {
@@ -208,6 +213,7 @@ func (d *gLDriver) startDrawThread() {
 					go c.reloadScale()
 				})
 			case <-draw.C:
+				canvasRefreshed := false
 				for _, win := range d.windowList() {
 					w := win.(*window)
 					w.viewLock.RLock()
@@ -218,9 +224,10 @@ func (d *gLDriver) startDrawThread() {
 					if closing || !canvas.IsDirty() || !visible {
 						continue
 					}
-
+					canvasRefreshed = true
 					d.repaintWindow(w)
 				}
+				cache.Clean(canvasRefreshed)
 			}
 		}
 	}()

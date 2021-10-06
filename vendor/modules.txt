@@ -1,4 +1,4 @@
-# fyne.io/fyne/v2 v2.0.3-rc2.0.20210512202447-bee2235b5019
+# fyne.io/fyne/v2 v2.1.0
 fyne.io/fyne/v2
 fyne.io/fyne/v2/app
 fyne.io/fyne/v2/canvas
@@ -10,12 +10,23 @@ fyne.io/fyne/v2/driver/mobile
 fyne.io/fyne/v2/internal
 fyne.io/fyne/v2/internal/animation
 fyne.io/fyne/v2/internal/app
+fyne.io/fyne/v2/internal/async
 fyne.io/fyne/v2/internal/cache
 fyne.io/fyne/v2/internal/color
 fyne.io/fyne/v2/internal/driver
 fyne.io/fyne/v2/internal/driver/common
 fyne.io/fyne/v2/internal/driver/glfw
-fyne.io/fyne/v2/internal/driver/gomobile
+fyne.io/fyne/v2/internal/driver/mobile
+fyne.io/fyne/v2/internal/driver/mobile/app
+fyne.io/fyne/v2/internal/driver/mobile/app/internal/callfn
+fyne.io/fyne/v2/internal/driver/mobile/event/key
+fyne.io/fyne/v2/internal/driver/mobile/event/lifecycle
+fyne.io/fyne/v2/internal/driver/mobile/event/paint
+fyne.io/fyne/v2/internal/driver/mobile/event/size
+fyne.io/fyne/v2/internal/driver/mobile/event/touch
+fyne.io/fyne/v2/internal/driver/mobile/geom
+fyne.io/fyne/v2/internal/driver/mobile/gl
+fyne.io/fyne/v2/internal/driver/mobile/mobileinit
 fyne.io/fyne/v2/internal/painter
 fyne.io/fyne/v2/internal/painter/gl
 fyne.io/fyne/v2/internal/painter/software
@@ -38,21 +49,11 @@ github.com/faiface/beep/speaker
 github.com/fredbi/uri
 # github.com/fsnotify/fsnotify v1.4.9
 github.com/fsnotify/fsnotify
-# github.com/fyne-io/mobile v0.1.3-0.20210510125822-9a3fcd853577
-github.com/fyne-io/mobile/app
-github.com/fyne-io/mobile/app/internal/callfn
-github.com/fyne-io/mobile/event/key
-github.com/fyne-io/mobile/event/lifecycle
-github.com/fyne-io/mobile/event/paint
-github.com/fyne-io/mobile/event/size
-github.com/fyne-io/mobile/event/touch
-github.com/fyne-io/mobile/exp/f32
-github.com/fyne-io/mobile/geom
-github.com/fyne-io/mobile/gl
-github.com/fyne-io/mobile/internal/mobileinit
-# github.com/go-gl/gl v0.0.0-20190320180904-bf2b1f2f34d7
+# github.com/go-gl/gl v0.0.0-20210813123233-e4099ee2221f
 github.com/go-gl/gl/v3.1/gles2
+github.com/go-gl/gl/v3.1/gles2/KHR
 github.com/go-gl/gl/v3.2-core/gl
+github.com/go-gl/gl/v3.2-core/gl/KHR
 # github.com/go-gl/glfw/v3.3/glfw v0.0.0-20210410170116-ea3d685f79fb
 github.com/go-gl/glfw/v3.3/glfw
 github.com/go-gl/glfw/v3.3/glfw/glfw/deps
@@ -81,6 +82,14 @@ github.com/srwiley/rasterx
 # github.com/stretchr/testify v1.5.1
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
+# github.com/yuin/goldmark v1.3.8
+github.com/yuin/goldmark
+github.com/yuin/goldmark/ast
+github.com/yuin/goldmark/parser
+github.com/yuin/goldmark/renderer
+github.com/yuin/goldmark/renderer/html
+github.com/yuin/goldmark/text
+github.com/yuin/goldmark/util
 # golang.org/x/exp v0.0.0-20190306152737-a1d7652674e8
 golang.org/x/exp/shiny/driver/gldriver
 golang.org/x/exp/shiny/driver/internal/drawer
@@ -109,16 +118,17 @@ golang.org/x/mobile/event/touch
 golang.org/x/mobile/geom
 golang.org/x/mobile/gl
 golang.org/x/mobile/internal/mobileinit
-# golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
+# golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
 golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
-# golang.org/x/sys v0.0.0-20200720211630-cb9d2d5c5666
+# golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c
+golang.org/x/sys/execabs
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
-# golang.org/x/text v0.3.2
+# golang.org/x/text v0.3.3
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
 golang.org/x/text/encoding/htmlindex

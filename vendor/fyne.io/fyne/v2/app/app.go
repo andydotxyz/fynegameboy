@@ -4,7 +4,6 @@
 package app // import "fyne.io/fyne/v2/app"
 
 import (
-	"os/exec"
 	"strconv"
 	"sync"
 	"time"
@@ -12,6 +11,10 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/internal"
 	"fyne.io/fyne/v2/internal/app"
+	intRepo "fyne.io/fyne/v2/internal/repository"
+	"fyne.io/fyne/v2/storage/repository"
+
+	"golang.org/x/sys/execabs"
 )
 
 // Declare conformity with App interface
@@ -29,7 +32,7 @@ type fyneApp struct {
 
 	running  bool
 	runMutex sync.Mutex
-	exec     func(name string, arg ...string) *exec.Cmd
+	exec     func(name string, arg ...string) *execabs.Cmd
 }
 
 func (a *fyneApp) Icon() fyne.Resource {
@@ -109,19 +112,29 @@ func New() fyne.App {
 }
 
 func newAppWithDriver(d fyne.Driver, id string) fyne.App {
-	newApp := &fyneApp{uniqueID: id, driver: d, exec: exec.Command, lifecycle: &app.Lifecycle{}}
+	newApp := &fyneApp{uniqueID: id, driver: d, exec: execabs.Command, lifecycle: &app.Lifecycle{}}
 	fyne.SetCurrentApp(newApp)
+	newApp.settings = loadSettings()
 
 	newApp.prefs = newPreferences(newApp)
-	if pref, ok := newApp.prefs.(interface{ load() }); ok && id != "" {
-		pref.load()
-	}
-	newApp.settings = loadSettings()
 	newApp.storage = &store{a: newApp}
+	if id != "" {
+		if pref, ok := newApp.prefs.(interface{ load() }); ok {
+			pref.load()
+		}
+
+		root, _ := newApp.storage.docRootURI()
+		newApp.storage.Docs = &internal.Docs{RootDocURI: root}
+	} else {
+		newApp.storage.Docs = &internal.Docs{} // an empty impl to avoid crashes
+	}
 
 	if !d.Device().IsMobile() {
 		newApp.settings.watchSettings()
 	}
+
+	repository.Register("http", intRepo.NewHTTPRepository())
+	repository.Register("https", intRepo.NewHTTPRepository())
 
 	return newApp
 }

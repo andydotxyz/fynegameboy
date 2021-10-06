@@ -217,7 +217,7 @@ func (c *glCanvas) buildMenu(w *window, m *fyne.MainMenu) {
 	if hasNativeMenu() {
 		setupNativeMenu(w, m)
 	} else {
-		c.setMenuOverlay(buildMenuOverlay(m, c))
+		c.setMenuOverlay(buildMenuOverlay(m, w))
 	}
 }
 
@@ -325,7 +325,7 @@ func (c *glCanvas) applyThemeOutOfTreeObjects() {
 
 func newCanvas() *glCanvas {
 	c := &glCanvas{scale: 1.0, texScale: 1.0}
-	c.Initialize(c, 4096, c.overlayChanged)
+	c.Initialize(c, c.overlayChanged)
 	c.setContent(&canvas.Rectangle{FillColor: theme.BackgroundColor()})
 	c.padded = true
 	return c
