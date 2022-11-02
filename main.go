@@ -59,7 +59,7 @@ func startGUI() {
 	var data []byte
 	if romPath == "" && uri != nil && uri.String() != "" {
 		read, err := storage.Reader(uri)
-		if err != nil {
+		if err == nil {
 			data, _ = ioutil.ReadAll(read)
 		}
 	}
