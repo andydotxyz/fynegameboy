@@ -1,12 +1,10 @@
 package fyne
 
 import (
-	"crypto/ed25519"
 	"fmt"
 	"image"
 	"image/color"
 	"log"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -15,9 +13,6 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/storage"
-
-	"github.com/fynelabs/fyneselfupdate"
-	"github.com/fynelabs/selfupdate"
 
 	"github.com/andydotxyz/fynegameboy/util"
 )
@@ -285,27 +280,5 @@ func (lcd *LCD) Run(drawSignal chan bool, onQuit func()) {
 			}, win)
 		}),
 	)))
-
-	selfManage(lcd.app, win)
 	win.ShowAndRun()
-}
-
-
-// selfManage turns on automatic update
-func selfManage(a fyne.App, w fyne.Window) {
-	publicKey := ed25519.PublicKey{173, 172, 119, 135, 110, 164, 228, 191, 220, 253, 163, 146, 202, 189, 212, 148, 155, 64, 68, 156, 181, 255, 111, 120, 36, 254, 212, 232, 210, 15, 155, 101}
-
-	// The public key above match the signature of the below file served by our CDN
-	httpSource := selfupdate.NewHTTPSource(nil, "https://geoffrey-test-artefacts.fynelabs.com/self-update/24/24bf6b9b-c379-44b6-9952-3caa0fe81cce/{{.OS}}-{{.Arch}}/{{.Executable}}{{.Ext}}")
-
-	config := fyneselfupdate.NewConfigWithTimeout(a, w, time.Duration(1)*time.Minute,
-		httpSource,
-		selfupdate.Schedule{FetchOnStart: true, Interval: time.Hour * time.Duration(12)},
-		publicKey)
-
-	_, err := selfupdate.Manage(config)
-	if err != nil {
-		log.Println("Error while setting up update manager: ", err)
-		return
-	}
 }
