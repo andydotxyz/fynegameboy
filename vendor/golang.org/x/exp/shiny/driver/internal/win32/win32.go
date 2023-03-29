@@ -333,7 +333,8 @@ var windowMsgs = map[uint32]func(hwnd syscall.Handle, uMsg uint32, wParam, lPara
 
 	_WM_KEYDOWN: sendKeyEvent,
 	_WM_KEYUP:   sendKeyEvent,
-	// TODO case _WM_SYSKEYDOWN, _WM_SYSKEYUP:
+	_WM_SYSKEYDOWN: sendKeyEvent,
+	_WM_SYSKEYUP: sendKeyEvent,
 }
 
 func AddWindowMsg(fn func(hwnd syscall.Handle, uMsg uint32, wParam, lParam uintptr)) uint32 {
@@ -367,6 +368,7 @@ func NewWindow(opts *screen.NewWindowOptions) (syscall.Handle, error) {
 }
 
 const windowClass = "shiny_Window"
+const screenWindowClass = "shiny_ScreenWindow"
 
 func initWindowClass() (err error) {
 	wcname, err := syscall.UTF16PtrFromString(windowClass)
@@ -385,8 +387,17 @@ func initWindowClass() (err error) {
 	return err
 }
 
+func closeWindowClass() (err error) {
+	wcname, err := syscall.UTF16PtrFromString(windowClass)
+	if err != nil {
+		return err
+	}
+	_UnregisterClass(wcname, hThisInstance)
+
+	return nil
+}
+
 func initScreenWindow() (err error) {
-	const screenWindowClass = "shiny_ScreenWindow"
 	swc, err := syscall.UTF16PtrFromString(screenWindowClass)
 	if err != nil {
 		return err
@@ -416,6 +427,20 @@ func initScreenWindow() (err error) {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func closeScreenWindow() (err error) {
+	// first destroy window
+	_DestroyWindow(screenHWND)
+
+	// then unregister class
+	swc, err := syscall.UTF16PtrFromString(screenWindowClass)
+	if err != nil {
+		return err
+	}
+	_UnregisterClass(swc, hThisInstance)
+
 	return nil
 }
 
@@ -461,13 +486,16 @@ func Main(f func()) (retErr error) {
 	}
 	defer func() {
 		// TODO(andlabs): log an error if this fails?
-		_DestroyWindow(screenHWND)
-		// TODO(andlabs): unregister window class
+		closeScreenWindow()
 	}()
 
 	if err := initWindowClass(); err != nil {
 		return err
 	}
+	defer func() {
+		// TODO(andlabs): log an error if this fails?
+		closeWindowClass()
+	}()
 
 	// Prime the pump.
 	mainCallback = f

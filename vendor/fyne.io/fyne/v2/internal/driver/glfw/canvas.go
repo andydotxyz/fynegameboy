@@ -105,8 +105,13 @@ func (c *glCanvas) PixelCoordinateForPosition(pos fyne.Position) (int, int) {
 }
 
 func (c *glCanvas) Resize(size fyne.Size) {
+	// This might not be the ideal solution, but it effectively avoid the first frame to be blurry due to the
+	// rounding of the size to the loower integer when scale == 1. It does not affect the other cases as far as we tested.
+	// This can easily be seen with fyne/cmd/hello and a scale == 1 as the text will happear blurry without the following line.
+	nearestSize := fyne.NewSize(float32(math.Ceil(float64(size.Width))), float32(math.Ceil(float64(size.Height))))
+
 	c.Lock()
-	c.size = size
+	c.size = nearestSize
 	c.Unlock()
 
 	for _, overlay := range c.Overlays().List() {
@@ -115,17 +120,17 @@ func (c *glCanvas) Resize(size fyne.Size) {
 			// “Notifies” the PopUp of the canvas size change.
 			p.Refresh()
 		} else {
-			overlay.Resize(size)
+			overlay.Resize(nearestSize)
 		}
 	}
 
 	c.RLock()
-	c.content.Resize(c.contentSize(size))
+	c.content.Resize(c.contentSize(nearestSize))
 	c.content.Move(c.contentPos())
 
 	if c.menu != nil {
 		c.menu.Refresh()
-		c.menu.Resize(fyne.NewSize(size.Width, c.menu.MinSize().Height))
+		c.menu.Resize(fyne.NewSize(nearestSize.Width, c.menu.MinSize().Height))
 	}
 	c.RUnlock()
 }
@@ -137,16 +142,17 @@ func (c *glCanvas) Scale() float32 {
 }
 
 func (c *glCanvas) SetContent(content fyne.CanvasObject) {
-	c.Lock()
-	c.setContent(content)
+	content.Resize(content.MinSize()) // give it the space it wants then calculate the real min
 
-	c.content.Resize(c.content.MinSize()) // give it the space it wants then calculate the real min
+	c.Lock()
 	// the pass above makes some layouts wide enough to wrap, so we ask again what the true min is.
-	newSize := c.size.Max(c.canvasSize(c.content.MinSize()))
+	newSize := c.size.Max(c.canvasSize(content.MinSize()))
+
+	c.setContent(content)
 	c.Unlock()
 
 	c.Resize(newSize)
-	c.SetDirty(true)
+	c.SetDirty()
 }
 
 func (c *glCanvas) SetOnKeyDown(typed func(*fyne.KeyEvent)) {
@@ -187,7 +193,7 @@ func (c *glCanvas) reloadScale() {
 	c.Lock()
 	c.scale = c.context.(*window).calculatedScale()
 	c.Unlock()
-	c.SetDirty(true)
+	c.SetDirty()
 
 	c.context.RescaleContext()
 }
@@ -259,7 +265,7 @@ func (c *glCanvas) menuHeight() float32 {
 }
 
 func (c *glCanvas) overlayChanged() {
-	c.SetDirty(true)
+	c.SetDirty()
 }
 
 func (c *glCanvas) paint(size fyne.Size) {
@@ -267,7 +273,6 @@ func (c *glCanvas) paint(size fyne.Size) {
 	if c.Content() == nil {
 		return
 	}
-	c.SetDirty(false)
 	c.Painter().Clear()
 
 	paint := func(node *common.RenderCacheNode, pos fyne.Position) {
@@ -275,6 +280,9 @@ func (c *glCanvas) paint(size fyne.Size) {
 		if _, ok := obj.(fyne.Scrollable); ok {
 			inner := clips.Push(pos, obj.Size())
 			c.Painter().StartClipping(inner.Rect())
+		}
+		if size.Width <= 0 || size.Height <= 0 { // iconifying on Windows can do bad things
+			return
 		}
 		c.Painter().Paint(obj, pos, size)
 	}
@@ -285,11 +293,9 @@ func (c *glCanvas) paint(size fyne.Size) {
 				c.Painter().StartClipping(top.Rect())
 			} else {
 				c.Painter().StopClipping()
-
 			}
 		}
 	}
-
 	c.WalkTrees(paint, afterPaint)
 }
 

@@ -1,11 +1,8 @@
 package theme
 
 import (
-	"bytes"
-	"encoding/xml"
-	"image/color"
-
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/internal/svg"
 )
 
 const (
@@ -573,6 +570,11 @@ func (t *builtinTheme) Icon(n fyne.ThemeIconName) fyne.Resource {
 // for the currently selected theme.
 type ThemedResource struct {
 	source fyne.Resource
+
+	// ColorName specifies which theme colour should be used to theme the resource
+	//
+	// Since: 2.3
+	ColorName fyne.ThemeColorName
 }
 
 // NewThemedResource creates a resource that adapts to the current theme setting.
@@ -584,12 +586,24 @@ func NewThemedResource(src fyne.Resource) *ThemedResource {
 
 // Name returns the underlying resource name (used for caching).
 func (res *ThemedResource) Name() string {
-	return res.source.Name()
+	prefix := res.ColorName
+	if prefix == "" {
+		prefix = "foreground_"
+	} else {
+		prefix += "_"
+	}
+
+	return string(prefix) + res.source.Name()
 }
 
 // Content returns the underlying content of the resource adapted to the current text color.
 func (res *ThemedResource) Content() []byte {
-	return colorizeResource(res.source, ForegroundColor())
+	name := res.ColorName
+	if name == "" {
+		name = ColorNameForeground
+	}
+
+	return svg.Colorize(res.source.Content(), safeColorLookup(name, currentVariant()))
 }
 
 // Error returns a different resource for indicating an error.
@@ -611,13 +625,13 @@ func NewInvertedThemedResource(orig fyne.Resource) *InvertedThemedResource {
 
 // Name returns the underlying resource name (used for caching).
 func (res *InvertedThemedResource) Name() string {
-	return "inverted-" + res.source.Name()
+	return "inverted_" + res.source.Name()
 }
 
 // Content returns the underlying content of the resource adapted to the current background color.
 func (res *InvertedThemedResource) Content() []byte {
 	clr := BackgroundColor()
-	return colorizeResource(res.source, clr)
+	return svg.Colorize(res.source.Content(), clr)
 }
 
 // Original returns the underlying resource that this inverted themed resource was adapted from
@@ -644,7 +658,7 @@ func (res *ErrorThemedResource) Name() string {
 
 // Content returns the underlying content of the resource adapted to the current background color.
 func (res *ErrorThemedResource) Content() []byte {
-	return colorizeResource(res.source, ErrorColor())
+	return svg.Colorize(res.source.Content(), ErrorColor())
 }
 
 // Original returns the underlying resource that this error themed resource was adapted from
@@ -666,12 +680,12 @@ func NewPrimaryThemedResource(orig fyne.Resource) *PrimaryThemedResource {
 
 // Name returns the underlying resource name (used for caching).
 func (res *PrimaryThemedResource) Name() string {
-	return "primary-" + res.source.Name()
+	return "primary_" + res.source.Name()
 }
 
 // Content returns the underlying content of the resource adapted to the current background color.
 func (res *PrimaryThemedResource) Content() []byte {
-	return colorizeResource(res.source, PrimaryColor())
+	return svg.Colorize(res.source.Content(), PrimaryColor())
 }
 
 // Original returns the underlying resource that this primary themed resource was adapted from
@@ -680,7 +694,7 @@ func (res *PrimaryThemedResource) Original() fyne.Resource {
 }
 
 // DisabledResource is a resource wrapper that will return an appropriate resource colorized by
-// the current theme's `DisabledIconColor` color.
+// the current theme's `DisabledColor` color.
 type DisabledResource struct {
 	source fyne.Resource
 }
@@ -692,33 +706,14 @@ func (res *DisabledResource) Name() string {
 
 // Content returns the disabled style content of the correct resource for the current theme
 func (res *DisabledResource) Content() []byte {
-	return colorizeResource(res.source, DisabledColor())
+	return svg.Colorize(res.source.Content(), DisabledColor())
 }
 
-// NewDisabledResource creates a resource that adapts to the current theme's DisabledIconColor setting.
+// NewDisabledResource creates a resource that adapts to the current theme's DisabledColor setting.
 func NewDisabledResource(res fyne.Resource) *DisabledResource {
 	return &DisabledResource{
 		source: res,
 	}
-}
-
-func colorizeResource(res fyne.Resource, clr color.Color) []byte {
-	rdr := bytes.NewReader(res.Content())
-	s, err := svgFromXML(rdr)
-	if err != nil {
-		fyne.LogError("could not load SVG, falling back to static content:", err)
-		return res.Content()
-	}
-	if err := s.replaceFillColor(clr); err != nil {
-		fyne.LogError("could not replace fill color, falling back to static content:", err)
-		return res.Content()
-	}
-	b, err := xml.Marshal(s)
-	if err != nil {
-		fyne.LogError("could not marshal svg, falling back to static content:", err)
-		return res.Content()
-	}
-	return b
 }
 
 // FyneLogo returns a resource containing the Fyne logo

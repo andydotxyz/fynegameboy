@@ -10,6 +10,7 @@ import (
 	"github.com/yuin/goldmark/renderer"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/storage"
 )
 
 // NewRichTextFromMarkdown configures a RichText widget by parsing the provided markdown content.
@@ -28,6 +29,7 @@ func (t *RichText) ParseMarkdown(content string) {
 
 type markdownRenderer struct {
 	blockquote  bool
+	heading     bool
 	nextSeg     RichTextSegment
 	parentStack [][]RichTextSegment
 	segs        []RichTextSegment
@@ -39,6 +41,10 @@ func (m *markdownRenderer) Render(_ io.Writer, source []byte, n ast.Node) error 
 	m.nextSeg = &TextSegment{}
 	err := ast.Walk(n, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
+			if n.Kind().String() == "Heading" {
+				m.segs = append(m.segs, m.nextSeg)
+				m.heading = false
+			}
 			return ast.WalkContinue, m.handleExitNode(n)
 		}
 
@@ -52,27 +58,29 @@ func (m *markdownRenderer) Render(_ io.Writer, source []byte, n ast.Node) error 
 			m.parentStack = append(m.parentStack, m.segs)
 			m.segs = nil
 		case "Heading":
+			m.heading = true
 			switch n.(*ast.Heading).Level {
 			case 1:
 				m.nextSeg = &TextSegment{
 					Style: RichTextStyleHeading,
-					Text:  string(n.Text(source)),
 				}
 			case 2:
 				m.nextSeg = &TextSegment{
 					Style: RichTextStyleSubHeading,
-					Text:  string(n.Text(source)),
 				}
+			default:
+				m.nextSeg = &TextSegment{
+					Style: RichTextStyleParagraph,
+				}
+				m.nextSeg.(*TextSegment).Style.TextStyle.Bold = true
 			}
 		case "HorizontalRule", "ThematicBreak":
 			m.segs = append(m.segs, &SeparatorSegment{})
 		case "Link":
-			link, _ := url.Parse(string(n.(*ast.Link).Destination))
-			m.nextSeg = &HyperlinkSegment{fyne.TextAlignLeading, strings.TrimSpace(string(n.Text(source))), link}
+			m.nextSeg = makeLink(n.(*ast.Link))
 		case "Paragraph":
 			m.nextSeg = &TextSegment{
 				Style: RichTextStyleInline, // we make it a paragraph at the end if there are no more elements
-				Text:  string(n.Text(source)),
 			}
 			if m.blockquote {
 				m.nextSeg.(*TextSegment).Style = RichTextStyleBlockquote
@@ -80,7 +88,6 @@ func (m *markdownRenderer) Render(_ io.Writer, source []byte, n ast.Node) error 
 		case "CodeSpan":
 			m.nextSeg = &TextSegment{
 				Style: RichTextStyleCodeInline,
-				Text:  string(n.Text(source)),
 			}
 		case "CodeBlock", "FencedCodeBlock":
 			var data []byte
@@ -104,34 +111,31 @@ func (m *markdownRenderer) Render(_ io.Writer, source []byte, n ast.Node) error 
 			case 2:
 				m.nextSeg = &TextSegment{
 					Style: RichTextStyleStrong,
-					Text:  string(n.Text(source)),
 				}
 			default:
 				m.nextSeg = &TextSegment{
 					Style: RichTextStyleEmphasis,
-					Text:  string(n.Text(source)),
 				}
 			}
 		case "Strong":
 			m.nextSeg = &TextSegment{
 				Style: RichTextStyleStrong,
-				Text:  string(n.Text(source)),
 			}
 		case "Text":
-			trimmed := string(n.Text(source))
-			trimmed = strings.ReplaceAll(trimmed, "\n", " ") // newline inside paragraph is not newline
-			if trimmed == "" {
-				return ast.WalkContinue, nil
+			ret := addTextToSegment(string(n.Text(source)), m.nextSeg, n)
+			if ret != 0 {
+				return ret, nil
 			}
-			if text, ok := m.nextSeg.(*TextSegment); ok {
-				text.Text = trimmed
+
+			_, isImage := m.nextSeg.(*ImageSegment)
+			if !m.heading && !isImage {
+				m.segs = append(m.segs, m.nextSeg)
 			}
-			if link, ok := m.nextSeg.(*HyperlinkSegment); ok {
-				link.Text = trimmed
-			}
-			m.segs = append(m.segs, m.nextSeg)
 		case "Blockquote":
 			m.blockquote = true
+		case "Image":
+			m.nextSeg = makeImage(n.(*ast.Image)) // remember this for applying title
+			m.segs = append(m.segs, m.nextSeg)
 		}
 
 		return ast.WalkContinue, nil
@@ -153,10 +157,10 @@ func (m *markdownRenderer) handleExitNode(n ast.Node) error {
 		m.segs = m.parentStack[len(m.parentStack)-1]
 		m.parentStack = m.parentStack[:len(m.parentStack)-1]
 		m.segs = append(m.segs, &ParagraphSegment{Texts: itemSegs})
-	} else if !m.blockquote {
+	} else if !m.blockquote && !m.heading {
 		if len(m.segs) > 0 {
 			if text, ok := m.segs[len(m.segs)-1].(*TextSegment); ok && n.Kind().String() == "Paragraph" {
-				text.Style = RichTextStyleParagraph
+				text.Style.Inline = false
 			}
 		}
 		m.nextSeg = &TextSegment{
@@ -164,6 +168,43 @@ func (m *markdownRenderer) handleExitNode(n ast.Node) error {
 		}
 	}
 	return nil
+}
+
+func addTextToSegment(text string, s RichTextSegment, node ast.Node) ast.WalkStatus {
+	trimmed := strings.ReplaceAll(text, "\n", " ") // newline inside paragraph is not newline
+	if trimmed == "" {
+		return ast.WalkContinue
+	}
+	if t, ok := s.(*TextSegment); ok {
+		next := node.(*ast.Text).NextSibling()
+		if next != nil {
+			if nextText, ok := next.(*ast.Text); ok {
+				if nextText.Segment.Start > node.(*ast.Text).Segment.Stop { // detect presence of a trailing newline
+					trimmed = trimmed + " "
+				}
+			}
+		}
+
+		t.Text = t.Text + trimmed
+	}
+	if link, ok := s.(*HyperlinkSegment); ok {
+		link.Text = link.Text + trimmed
+	}
+	return 0
+}
+
+func makeImage(n *ast.Image) *ImageSegment {
+	dest := string(n.Destination)
+	u, err := storage.ParseURI(dest)
+	if err != nil {
+		u = storage.NewFileURI(dest)
+	}
+	return &ImageSegment{Source: u, Title: string(n.Title)}
+}
+
+func makeLink(n *ast.Link) *HyperlinkSegment {
+	link, _ := url.Parse(string(n.Destination))
+	return &HyperlinkSegment{fyne.TextAlignLeading, "", link}
 }
 
 func parseMarkdown(content string) []RichTextSegment {

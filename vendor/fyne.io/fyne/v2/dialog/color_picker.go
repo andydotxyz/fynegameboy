@@ -4,10 +4,8 @@ import (
 	"image/color"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	col "fyne.io/fyne/v2/internal/color"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -22,6 +20,7 @@ func newColorBasicPicker(callback func(color.Color)) fyne.CanvasObject {
 		theme.PrimaryColorNamed(theme.ColorBlue),
 		theme.PrimaryColorNamed(theme.ColorPurple),
 		theme.PrimaryColorNamed(theme.ColorBrown),
+		// theme.PrimaryColorNamed(theme.ColorGray),
 	}, theme.ColorChromaticIcon(), callback)
 }
 
@@ -31,7 +30,7 @@ func newColorGreyscalePicker(callback func(color.Color)) fyne.CanvasObject {
 		"#ffffff",
 		"#cccccc",
 		"#aaaaaa",
-		"#888888",
+		"#808080",
 		"#555555",
 		"#333333",
 		"#000000",
@@ -52,6 +51,7 @@ type colorAdvancedPicker struct {
 	Hue                     int // Range 0-360 (degrees)
 	Saturation, Lightness   int // Range 0-100 (percent)
 	ColorModel              string
+	previousColor           color.Color
 
 	onChange func(color.Color)
 }
@@ -62,6 +62,7 @@ func newColorAdvancedPicker(color color.Color, onChange func(color.Color)) *colo
 		onChange: onChange,
 	}
 	c.ExtendBaseWidget(c)
+	c.previousColor = color
 	c.updateColor(color)
 	return c
 }
@@ -78,6 +79,7 @@ func (p *colorAdvancedPicker) Color() color.Color {
 
 // SetColor updates the color selected in this color widget.
 func (p *colorAdvancedPicker) SetColor(color color.Color) {
+	p.previousColor = color
 	if p.updateColor(color) {
 		p.Refresh()
 		if f := p.onChange; f != nil {
@@ -117,7 +119,7 @@ func (p *colorAdvancedPicker) CreateRenderer() fyne.WidgetRenderer {
 	p.ExtendBaseWidget(p)
 
 	// Preview
-	preview := &canvas.Rectangle{}
+	preview := newColorPreview(p.previousColor)
 
 	// HSL
 	hueChannel := newColorChannel("H", 0, 360, p.Hue, func(h int) {
@@ -173,18 +175,14 @@ func (p *colorAdvancedPicker) CreateRenderer() fyne.WidgetRenderer {
 		}
 	})
 
-	contents := fyne.NewContainerWithLayout(layout.NewPaddedLayout(), container.NewVBox(
+	contents := container.NewPadded(container.NewVBox(
 		container.NewGridWithColumns(3,
-			fyne.NewContainerWithLayout(layout.NewPaddedLayout(), wheel),
+			container.NewPadded(wheel),
 			hslBox,
 			rgbBox),
 		container.NewGridWithColumns(3,
-			fyne.NewContainerWithLayout(layout.NewPaddedLayout(),
-				fyne.NewContainerWithLayout(layout.NewMaxLayout(),
-					newCheckeredBackground(),
-					preview,
-				),
-			),
+			container.NewPadded(preview),
+
 			hex,
 			alphaChannel,
 		),
@@ -261,7 +259,7 @@ type colorPickerRenderer struct {
 	saturationChannel *colorChannel
 	lightnessChannel  *colorChannel
 	wheel             *colorWheel
-	preview           *canvas.Rectangle
+	preview           *colorPreview
 	alphaChannel      *colorChannel
 	hex               *userChangeEntry
 	contents          fyne.CanvasObject
@@ -289,8 +287,7 @@ func (r *colorPickerRenderer) updateObjects() {
 	color := r.picker.Color()
 
 	// Preview
-	r.preview.FillColor = color
-	r.preview.Refresh()
+	r.preview.SetColor(color)
 
 	// Alpha
 	r.alphaChannel.SetValue(r.picker.Alpha)

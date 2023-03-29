@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build linux && !android
 // +build linux,!android
 
 package app
@@ -28,7 +29,6 @@ import (
 	"fyne.io/fyne/v2/internal/driver/mobile/event/paint"
 	"fyne.io/fyne/v2/internal/driver/mobile/event/size"
 	"fyne.io/fyne/v2/internal/driver/mobile/event/touch"
-	"fyne.io/fyne/v2/internal/driver/mobile/geom"
 )
 
 func init() {
@@ -48,7 +48,7 @@ func main(f func(App)) {
 
 	// TODO: translate X11 expose events to shiny paint events, instead of
 	// sending this synthetic paint event as a hack.
-	theApp.eventsIn <- paint.Event{}
+	theApp.events.In() <- paint.Event{}
 
 	donec := make(chan struct{})
 	go func() {
@@ -84,18 +84,18 @@ func onResize(w, h int) {
 	// TODO(nigeltao): don't assume 72 DPI. DisplayWidth and DisplayWidthMM
 	// is probably the best place to start looking.
 	pixelsPerPt := float32(1)
-	theApp.eventsIn <- size.Event{
+	theApp.events.In() <- size.Event{
 		WidthPx:     w,
 		HeightPx:    h,
-		WidthPt:     geom.Pt(w),
-		HeightPt:    geom.Pt(h),
+		WidthPt:     float32(w),
+		HeightPt:    float32(h),
 		PixelsPerPt: pixelsPerPt,
 		Orientation: screenOrientation(w, h),
 	}
 }
 
 func sendTouch(t touch.Type, x, y float32) {
-	theApp.eventsIn <- touch.Event{
+	theApp.events.In() <- touch.Event{
 		X:        x,
 		Y:        y,
 		Sequence: 0, // TODO: button??
@@ -121,7 +121,7 @@ func onStop() {
 	}
 	stopped = true
 	theApp.sendLifecycle(lifecycle.StageDead)
-	theApp.eventsIn <- stopPumping{}
+	theApp.events.Close()
 }
 
 // driverShowVirtualKeyboard does nothing on desktop

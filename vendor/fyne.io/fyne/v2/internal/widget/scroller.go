@@ -209,13 +209,15 @@ func (a *scrollBarArea) MouseOut() {
 }
 
 func (a *scrollBarArea) moveBar(offset float32, barSize fyne.Size) {
+	oldX := a.scroll.Offset.X
+	oldY := a.scroll.Offset.Y
 	switch a.orientation {
 	case scrollBarOrientationHorizontal:
 		a.scroll.Offset.X = a.computeScrollOffset(barSize.Width, offset, a.scroll.Size().Width, a.scroll.Content.Size().Width)
 	default:
 		a.scroll.Offset.Y = a.computeScrollOffset(barSize.Height, offset, a.scroll.Size().Height, a.scroll.Content.Size().Height)
 	}
-	if f := a.scroll.OnScrolled; f != nil {
+	if f := a.scroll.OnScrolled; f != nil && (a.scroll.Offset.X != oldX || a.scroll.Offset.Y != oldY) {
 		f(a.scroll.Offset)
 	}
 	a.scroll.refreshWithoutOffsetUpdate()
@@ -381,23 +383,22 @@ func (s *Scroll) CreateRenderer() fyne.WidgetRenderer {
 	scr.horizArea = newScrollBarArea(s, scrollBarOrientationHorizontal)
 	scr.leftShadow = NewShadow(ShadowRight, SubmergedContentLevel)
 	scr.rightShadow = NewShadow(ShadowLeft, SubmergedContentLevel)
-	scr.SetObjects(append(scr.Objects(), scr.vertArea, scr.topShadow, scr.bottomShadow, scr.horizArea,
-		scr.leftShadow, scr.rightShadow))
+	scr.SetObjects(append(scr.Objects(), scr.topShadow, scr.bottomShadow, scr.leftShadow, scr.rightShadow,
+		scr.vertArea, scr.horizArea))
 	scr.updatePosition()
 
 	return scr
 }
 
-//ScrollToBottom will scroll content to container bottom - to show latest info which end user just added
+// ScrollToBottom will scroll content to container bottom - to show latest info which end user just added
 func (s *Scroll) ScrollToBottom() {
-	s.Offset.Y = s.Content.MinSize().Height - s.Size().Height
+	s.scrollBy(0, -1*(s.Content.MinSize().Height-s.Size().Height-s.Offset.Y))
 	s.Refresh()
 }
 
-//ScrollToTop will scroll content to container top
+// ScrollToTop will scroll content to container top
 func (s *Scroll) ScrollToTop() {
-	s.Offset.Y = 0
-	s.Refresh()
+	s.scrollBy(0, -s.Offset.Y)
 }
 
 // DragEnd will stop scrolling on mobile has stopped
@@ -458,7 +459,10 @@ func (s *Scroll) refreshWithoutOffsetUpdate() {
 
 // Scrolled is called when an input device triggers a scroll event
 func (s *Scroll) Scrolled(ev *fyne.ScrollEvent) {
-	dx, dy := ev.Scrolled.DX, ev.Scrolled.DY
+	s.scrollBy(ev.Scrolled.DX, ev.Scrolled.DY)
+}
+
+func (s *Scroll) scrollBy(dx, dy float32) {
 	if s.Size().Width < s.Content.MinSize().Width && s.Size().Height >= s.Content.MinSize().Height && dx == 0 {
 		dx, dy = dy, dx
 	}
@@ -476,9 +480,11 @@ func (s *Scroll) updateOffset(deltaX, deltaY float32) bool {
 		}
 		return false
 	}
+	oldX := s.Offset.X
+	oldY := s.Offset.Y
 	s.Offset.X = computeOffset(s.Offset.X, -deltaX, s.Size().Width, s.Content.MinSize().Width)
 	s.Offset.Y = computeOffset(s.Offset.Y, -deltaY, s.Size().Height, s.Content.MinSize().Height)
-	if f := s.OnScrolled; f != nil {
+	if f := s.OnScrolled; f != nil && (s.Offset.X != oldX || s.Offset.Y != oldY) {
 		f(s.Offset)
 	}
 	return true

@@ -2,6 +2,7 @@ package container // import "fyne.io/fyne/v2/container"
 
 import (
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/internal"
 	"fyne.io/fyne/v2/layout"
 )
 
@@ -11,7 +12,7 @@ import (
 //
 // Since: 1.4
 func NewAdaptiveGrid(rowcols int, objects ...fyne.CanvasObject) *fyne.Container {
-	return fyne.NewContainerWithLayout(layout.NewAdaptiveGridLayout(rowcols), objects...)
+	return New(layout.NewAdaptiveGridLayout(rowcols), objects...)
 }
 
 // NewBorder creates a new container with the specified objects and using the border layout.
@@ -33,14 +34,19 @@ func NewBorder(top, bottom, left, right fyne.CanvasObject, objects ...fyne.Canva
 	if right != nil {
 		all = append(all, right)
 	}
-	return fyne.NewContainerWithLayout(layout.NewBorderLayout(top, bottom, left, right), all...)
+
+	if len(objects) == 1 && objects[0] == nil {
+		internal.LogHint("Border layout requires only 4 parameters, optional items cannot be nil")
+		all = all[1:]
+	}
+	return New(layout.NewBorderLayout(top, bottom, left, right), all...)
 }
 
 // NewCenter creates a new container with the specified objects centered in the available space.
 //
 // Since: 1.4
 func NewCenter(objects ...fyne.CanvasObject) *fyne.Container {
-	return fyne.NewContainerWithLayout(layout.NewCenterLayout(), objects...)
+	return New(layout.NewCenterLayout(), objects...)
 }
 
 // NewGridWithColumns creates a new container with the specified objects and using the grid layout with
@@ -48,7 +54,7 @@ func NewCenter(objects ...fyne.CanvasObject) *fyne.Container {
 //
 // Since: 1.4
 func NewGridWithColumns(cols int, objects ...fyne.CanvasObject) *fyne.Container {
-	return fyne.NewContainerWithLayout(layout.NewGridLayoutWithColumns(cols), objects...)
+	return New(layout.NewGridLayoutWithColumns(cols), objects...)
 }
 
 // NewGridWithRows creates a new container with the specified objects and using the grid layout with
@@ -56,7 +62,7 @@ func NewGridWithColumns(cols int, objects ...fyne.CanvasObject) *fyne.Container 
 //
 // Since: 1.4
 func NewGridWithRows(rows int, objects ...fyne.CanvasObject) *fyne.Container {
-	return fyne.NewContainerWithLayout(layout.NewGridLayoutWithRows(rows), objects...)
+	return New(layout.NewGridLayoutWithRows(rows), objects...)
 }
 
 // NewGridWrap creates a new container with the specified objects and using the gridwrap layout.
@@ -65,7 +71,7 @@ func NewGridWithRows(rows int, objects ...fyne.CanvasObject) *fyne.Container {
 //
 // Since: 1.4
 func NewGridWrap(size fyne.Size, objects ...fyne.CanvasObject) *fyne.Container {
-	return fyne.NewContainerWithLayout(layout.NewGridWrapLayout(size), objects...)
+	return New(layout.NewGridWrapLayout(size), objects...)
 }
 
 // NewHBox creates a new container with the specified objects and using the HBox layout.
@@ -73,21 +79,21 @@ func NewGridWrap(size fyne.Size, objects ...fyne.CanvasObject) *fyne.Container {
 //
 // Since: 1.4
 func NewHBox(objects ...fyne.CanvasObject) *fyne.Container {
-	return fyne.NewContainerWithLayout(layout.NewHBoxLayout(), objects...)
+	return New(layout.NewHBoxLayout(), objects...)
 }
 
 // NewMax creates a new container with the specified objects filling the available space.
 //
 // Since: 1.4
 func NewMax(objects ...fyne.CanvasObject) *fyne.Container {
-	return fyne.NewContainerWithLayout(layout.NewMaxLayout(), objects...)
+	return New(layout.NewMaxLayout(), objects...)
 }
 
 // NewPadded creates a new container with the specified objects inset by standard padding size.
 //
 // Since: 1.4
 func NewPadded(objects ...fyne.CanvasObject) *fyne.Container {
-	return fyne.NewContainerWithLayout(layout.NewPaddedLayout(), objects...)
+	return New(layout.NewPaddedLayout(), objects...)
 }
 
 // NewVBox creates a new container with the specified objects and using the VBox layout.
@@ -95,5 +101,5 @@ func NewPadded(objects ...fyne.CanvasObject) *fyne.Container {
 //
 // Since: 1.4
 func NewVBox(objects ...fyne.CanvasObject) *fyne.Container {
-	return fyne.NewContainerWithLayout(layout.NewVBoxLayout(), objects...)
+	return New(layout.NewVBoxLayout(), objects...)
 }

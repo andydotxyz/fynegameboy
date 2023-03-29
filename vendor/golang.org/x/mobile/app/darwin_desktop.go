@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// +build darwin
-// +build !ios
+//go:build darwin && !ios
+// +build darwin,!ios
 
 package app
 
@@ -59,7 +59,6 @@ func main(f func(App)) {
 	go func() {
 		f(theApp)
 		C.stopApp()
-		// TODO(crawshaw): trigger runApp to return
 	}()
 
 	C.runApp()

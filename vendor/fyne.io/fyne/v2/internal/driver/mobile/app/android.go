@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build android
 // +build android
 
 /*
@@ -56,17 +57,18 @@ import (
 	"log"
 	"mime"
 	"os"
+	"runtime"
+	"runtime/debug"
 	"strings"
 	"time"
 	"unsafe"
 
-	"fyne.io/fyne/v2/internal/driver/mobile/app/internal/callfn"
+	"fyne.io/fyne/v2/internal/driver/mobile/app/callfn"
 	"fyne.io/fyne/v2/internal/driver/mobile/event/key"
 	"fyne.io/fyne/v2/internal/driver/mobile/event/lifecycle"
 	"fyne.io/fyne/v2/internal/driver/mobile/event/paint"
 	"fyne.io/fyne/v2/internal/driver/mobile/event/size"
 	"fyne.io/fyne/v2/internal/driver/mobile/event/touch"
-	"fyne.io/fyne/v2/internal/driver/mobile/geom"
 	"fyne.io/fyne/v2/internal/driver/mobile/mobileinit"
 )
 
@@ -268,6 +270,8 @@ func onConfigurationChanged(activity *C.ANativeActivity) {
 
 //export onLowMemory
 func onLowMemory(activity *C.ANativeActivity) {
+	runtime.GC()
+	debug.FreeOSMemory()
 }
 
 var (
@@ -445,11 +449,11 @@ func mainUI(vm, jniEnv, ctx uintptr) error {
 			theApp.sendLifecycle(lifecycle.StageFocused)
 			widthPx := int(C.ANativeWindow_getWidth(w))
 			heightPx := int(C.ANativeWindow_getHeight(w))
-			theApp.eventsIn <- size.Event{
+			theApp.events.In() <- size.Event{
 				WidthPx:       widthPx,
 				HeightPx:      heightPx,
-				WidthPt:       geom.Pt(float32(widthPx) / pixelsPerPt),
-				HeightPt:      geom.Pt(float32(heightPx) / pixelsPerPt),
+				WidthPt:       float32(widthPx) / pixelsPerPt,
+				HeightPt:      float32(heightPx) / pixelsPerPt,
 				InsetTopPx:    screenInsetTop,
 				InsetBottomPx: screenInsetBottom,
 				InsetLeftPx:   screenInsetLeft,
@@ -458,7 +462,7 @@ func mainUI(vm, jniEnv, ctx uintptr) error {
 				Orientation:   screenOrientation(widthPx, heightPx), // we are guessing orientation here as it was not always working
 				DarkMode:      darkMode,
 			}
-			theApp.eventsIn <- paint.Event{External: true}
+			theApp.events.In() <- paint.Event{External: true}
 		case <-windowDestroyed:
 			if C.surface != nil {
 				if errStr := C.destroyEGLSurface(); errStr != nil {
@@ -556,7 +560,7 @@ func processEvent(env *C.JNIEnv, e *C.AInputEvent) {
 			if i == upDownIndex {
 				t = upDownType
 			}
-			theApp.eventsIn <- touch.Event{
+			theApp.events.In() <- touch.Event{
 				X:        float32(C.AMotionEvent_getX(e, i)),
 				Y:        float32(C.AMotionEvent_getY(e, i)),
 				Sequence: touch.Sequence(C.AMotionEvent_getPointerId(e, i)),
@@ -591,7 +595,7 @@ func processKey(env *C.JNIEnv, e *C.AInputEvent) {
 		k.Direction = key.DirNone
 	}
 	// TODO(crawshaw): set Modifiers.
-	theApp.eventsIn <- k
+	theApp.events.In() <- k
 }
 
 func eglGetError() string {

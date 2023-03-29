@@ -58,14 +58,15 @@ type fileDialog struct {
 
 // FileDialog is a dialog containing a file picker for use in opening or saving files.
 type FileDialog struct {
-	save             bool
 	callback         interface{}
 	onClosedCallback func(bool)
-	filter           storage.FileFilter
 	parent           fyne.Window
 	dialog           *fileDialog
-	dismissText      string
-	desiredSize      fyne.Size
+
+	confirmText, dismissText string
+	desiredSize              fyne.Size
+	filter                   storage.FileFilter
+	save                     bool
 	// this will be applied to dialog.dir when it's loaded
 	startingLocation fyne.ListableURI
 	// this will be the initial filename in a FileDialog in save mode
@@ -94,6 +95,9 @@ func (f *fileDialog) makeUI() fyne.CanvasObject {
 	label := "Open"
 	if f.file.save {
 		label = "Save"
+	}
+	if f.file.confirmText != "" {
+		label = f.file.confirmText
 	}
 	f.open = widget.NewButton(label, func() {
 		if f.file.callback == nil {
@@ -229,7 +233,33 @@ func (f *fileDialog) makeUI() fyne.CanvasObject {
 		}
 	})
 
+	newFolderButton := widget.NewButtonWithIcon("", theme.FolderNewIcon(), func() {
+		newFolderEntry := widget.NewEntry()
+		ShowForm("New Folder", "Create Folder", "Cancel", []*widget.FormItem{
+			{
+				Text:   "Name",
+				Widget: newFolderEntry,
+			},
+		}, func(s bool) {
+			if !s || newFolderEntry.Text == "" {
+				return
+			}
+
+			newFolderPath := filepath.Join(f.dir.Path(), newFolderEntry.Text)
+			createFolderErr := os.MkdirAll(newFolderPath, 0750)
+			if createFolderErr != nil {
+				fyne.LogError(
+					fmt.Sprintf("Failed to create folder with path %s", newFolderPath),
+					createFolderErr,
+				)
+				ShowError(errors.New("folder cannot be created"), f.file.parent)
+			}
+			f.refreshDir(f.dir)
+		}, f.file.parent)
+	})
+
 	optionsbuttons := container.NewHBox(
+		newFolderButton,
 		toggleViewButton,
 		optionsButton,
 	)
@@ -467,28 +497,21 @@ func (f *fileDialog) setView(view viewLayout) {
 //
 // Order of precedence is:
 //
-// * file.startingDirectory if non-empty, os.Stat()-able, and uses the file://
-//   URI scheme
-// * os.UserHomeDir()
-// * os.Getwd()
-// * "/" (should be filesystem root on all supported platforms)
-//
+//   - file.startingDirectory if non-empty, os.Stat()-able, and uses the file://
+//     URI scheme
+//   - os.UserHomeDir()
+//   - os.Getwd()
+//   - "/" (should be filesystem root on all supported platforms)
 func (f *FileDialog) effectiveStartingDir() fyne.ListableURI {
-	var startdir fyne.ListableURI = nil
-
 	if f.startingLocation != nil {
-		startdir = f.startingLocation
-	}
-
-	if startdir != nil {
-		if startdir.Scheme() == "file" {
-			path := startdir.String()[len(startdir.Scheme())+3:]
+		if f.startingLocation.Scheme() == "file" {
+			path := f.startingLocation.Path()
 
 			// the starting directory is set explicitly
 			if _, err := os.Stat(path); err != nil {
 				fyne.LogError("Error with StartingLocation", err)
 			} else {
-				return startdir
+				return f.startingLocation
 			}
 		}
 
@@ -533,15 +556,13 @@ func (f *FileDialog) effectiveStartingDir() fyne.ListableURI {
 func showFile(file *FileDialog) *fileDialog {
 	d := &fileDialog{file: file, initialFileName: file.initialFileName}
 	ui := d.makeUI()
-
-	d.setLocation(file.effectiveStartingDir())
-
 	size := ui.MinSize().Add(fyne.NewSize(fileIconCellWidth*2+theme.Padding()*6+theme.Padding(),
 		(fileIconSize+fileTextSize)+theme.Padding()*6))
 
 	d.win = widget.NewModalPopUp(ui, file.parent.Canvas())
 	d.win.Resize(size)
 
+	d.setLocation(file.effectiveStartingDir())
 	d.win.Show()
 	return d
 }
@@ -600,8 +621,21 @@ func (f *FileDialog) Hide() {
 	}
 }
 
-// SetDismissText allows custom text to be set in the confirmation button
+// SetConfirmText allows custom text to be set in the confirmation button
+//
+// Since: 2.2
+func (f *FileDialog) SetConfirmText(label string) {
+	f.confirmText = label
+	if f.dialog == nil {
+		return
+	}
+	f.dialog.open.SetText(label)
+	f.dialog.win.Refresh()
+}
+
+// SetDismissText allows custom text to be set in the dismiss button
 func (f *FileDialog) SetDismissText(label string) {
+	f.dismissText = label
 	if f.dialog == nil {
 		return
 	}
