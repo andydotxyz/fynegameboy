@@ -4,3 +4,6 @@
   ID = "xyz.andy.fynegameboy"
   Version = "1.2"
   Build = 15
+
+[Migrations]
+  fyneDo = true

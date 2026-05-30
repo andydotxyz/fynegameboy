@@ -224,8 +224,10 @@ func (lcd *LCD) Run(drawSignal chan bool, onQuit func()) {
 			// drawSignal was sent by the emulator
 			<-lcd.DrawSignal
 
-			lcd.draw()
-			canvas.Refresh(output)
+			fyne.Do(func() {
+				lcd.draw()
+				canvas.Refresh(output)
+			})
 		}
 	}()
 
