@@ -22,6 +22,8 @@ type LCD struct {
 	Pause      func()
 	Reset      func()
 	Resume     func()
+	Save       func()
+	ClearState func()
 	DrawSignal chan bool
 
 	app    fyne.App
@@ -272,6 +274,19 @@ func (lcd *LCD) Run(drawSignal chan bool, onQuit func()) {
 			}
 			open.Show()
 		}),
+		fyne.NewMenuItemSeparator(),
+		fyne.NewMenuItem("Save State", func() {
+			lcd.Save()
+			dialog.ShowInformation("Save State", "Game state saved.", win)
+		}),
+		fyne.NewMenuItem("Clear Save State...", func() {
+			dialog.ShowConfirm("Clear save state", "Erase the saved state for this game and restart it from the beginning?", func(ok bool) {
+				if ok {
+					lcd.ClearState()
+				}
+			}, win)
+		}),
+		fyne.NewMenuItemSeparator(),
 		fyne.NewMenuItem("Reset...", func() {
 			dialog.ShowConfirm("Reset game", "Are you sure you want to reset?", func(ok bool) {
 				if ok {

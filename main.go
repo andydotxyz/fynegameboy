@@ -65,7 +65,7 @@ func startGUI() {
 	}
 
 	var core *gb.Core
-	start := func() {
+	start := func(resume bool) {
 		core = newCore(d)
 		d.DrawSignal = core.DrawSignal
 
@@ -75,27 +75,48 @@ func startGUI() {
 			core.Init(loadRom(romPath))
 		}
 
+		if resume {
+			core.LoadState()
+		}
+
 		go core.Run()
 	}
-	start()
+	start(true)
 
 	const volumeControlMemoryLocation = 0xFF26
-	d.Reset = func() {
+	// silence the audio channels before tearing the current core down.
+	silence := func() {
 		core.Sound.Trigger(volumeControlMemoryLocation, 0, core.Memory.MainMemory[0xFF10:0xFF40])
+	}
+	d.Reset = func() {
+		silence()
 		core.Exit = true
-		start()
+		start(false)
 	}
 	d.Open = func(r fyneAPI.URIReadCloser) {
-		core.Exit = true
 		bytes, err := ioutil.ReadAll(r)
 		if err != nil {
 			fyneAPI.LogError("Unable to load ROM", err)
 			return
 		}
 		_ = r.Close()
+
+		// Persist the outgoing game's state before switching cartridge.
+		core.SaveState()
+		silence()
+		core.Exit = true
 		data = bytes
 		uri = r.URI()
-		d.Reset()
+		start(true)
+	}
+	d.Save = func() {
+		core.SaveState()
+	}
+	d.ClearState = func() {
+		core.DeleteState()
+		silence()
+		core.Exit = true
+		start(false)
 	}
 
 	d.Pause = func() {
@@ -110,6 +131,7 @@ func startGUI() {
 
 	d.Run(core.DrawSignal, func() {
 		core.SaveRAM()
+		core.SaveState()
 	})
 }
 

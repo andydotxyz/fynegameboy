@@ -88,6 +88,7 @@ type Core struct {
 	Exit      bool
 	GameTitle string
 	RamURI    fyne.URI
+	StateURI  fyne.URI
 }
 
 type Timer struct {
@@ -161,7 +162,7 @@ func (core *Core) Run() {
 }
 
 /*
-	Render a frame.
+Render a frame.
 */
 func (core *Core) update() {
 	cyclesThisUpdate := 0
@@ -204,7 +205,7 @@ func (core *Core) updateIO(cycles int) {
 }
 
 /*
-	Check interrupt.
+Check interrupt.
 */
 func (core *Core) interrupt() int {
 
@@ -266,7 +267,7 @@ func (core *Core) interrupt() int {
 }
 
 /*
-	Performing an interrupt
+Performing an interrupt
 */
 func (core *Core) doInterrupt(id int) {
 
@@ -310,7 +311,7 @@ func (core *Core) doInterrupt(id int) {
 }
 
 /*
-	Check and update timers.
+Check and update timers.
 */
 func (core *Core) updateTimers(cycles int) {
 	core.doDividerRegister(cycles)
@@ -331,7 +332,7 @@ func (core *Core) updateTimers(cycles int) {
 }
 
 /*
-	Request an Interrupt.
+Request an Interrupt.
 */
 func (core *Core) requestInterrupt(id int) {
 	//Read the present Interrupt Flag
@@ -341,9 +342,9 @@ func (core *Core) requestInterrupt(id int) {
 }
 
 /*
-	update divider register.
-	This register is incremented at rate of 16384Hz (~16779Hz on SGB).
-	In CGB Double Speed Mode it is incremented twice as fast, ie. at 32768Hz.
+update divider register.
+This register is incremented at rate of 16384Hz (~16779Hz on SGB).
+In CGB Double Speed Mode it is incremented twice as fast, ie. at 32768Hz.
 */
 func (core *Core) doDividerRegister(cycles int) {
 	core.Timer.DividerRegister += cycles
@@ -354,14 +355,14 @@ func (core *Core) doDividerRegister(cycles int) {
 }
 
 /*
-	Reset clock frequency.
+Reset clock frequency.
 */
 func (core *Core) setClockFreq() {
 	core.Timer.TimerCounter = 0
 }
 
 /*
-	Check whether clock is enabled.
+Check whether clock is enabled.
 */
 func (core *Core) isClockEnabled() bool {
 	if core.ReadMemory(0xFF07)&0x04 == 0x04 {
@@ -371,22 +372,21 @@ func (core *Core) isClockEnabled() bool {
 }
 
 /*
-	Get clock frequency sign specified in TAC register.
+Get clock frequency sign specified in TAC register.
 */
 func (core *Core) getClockFreq() byte {
 	return core.ReadMemory(0xFF07) & 0x3
 }
 
 /*
-	Get clock frequency sign according to clock frequency sign in TAC register.
-	FF07 - TAC - Timer Control (R/W)
-	  Bit 2    - Timer Stop  (0=Stop, 1=Start)
-	  Bits 1-0 - Input Clock Select
-             00:   4096 Hz    (~4194 Hz SGB)
-             01: 262144 Hz  (~268400 Hz SGB)
-             10:  65536 Hz   (~67110 Hz SGB)
-             11:  16384 Hz   (~16780 Hz SGB)
-
+		Get clock frequency sign according to clock frequency sign in TAC register.
+		FF07 - TAC - Timer Control (R/W)
+		  Bit 2    - Timer Stop  (0=Stop, 1=Start)
+		  Bits 1-0 - Input Clock Select
+	             00:   4096 Hz    (~4194 Hz SGB)
+	             01: 262144 Hz  (~268400 Hz SGB)
+	             10:  65536 Hz   (~67110 Hz SGB)
+	             11:  16384 Hz   (~16780 Hz SGB)
 */
 func (core *Core) getClockFreqCount() int {
 	switch core.getClockFreq() {
@@ -404,7 +404,7 @@ func (core *Core) getClockFreqCount() int {
 }
 
 /*
-	Initialize Cartridge, load rom file and decode rom props
+Initialize Cartridge, load rom file and decode rom props
 */
 func (core *Core) initRom(romData []byte, u fyne.URI) {
 	if romData == nil {
@@ -420,7 +420,9 @@ func (core *Core) initRom(romData []byte, u fyne.URI) {
 	if u != nil {
 		fileURI := u.String()
 		if fileURI != "" {
-			core.RamURI, _ = storage.ParseURI(u.String()[:len(u.String())-3] + ".sav")
+			base := fileURI[:len(fileURI)-len(u.Extension())]
+			core.RamURI, _ = storage.ParseURI(base + ".sav")
+			core.StateURI, _ = storage.ParseURI(base + ".st")
 
 			read, err := storage.Reader(core.RamURI)
 			if err != nil {
